@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-Chinese Dictionary Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .suggestions.show {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: #f7fafc;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-word {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .suggestion-def {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-translate {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-translate:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-save {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-clear {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+
+        .translation-result {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .translation-result.show {
+            display: block;
+        }
+
+        .translation-result h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .trans-section {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .trans-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .trans-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+
+        .trans-content {
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .example-sentence {
+            font-style: italic;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        .similar-words-container {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .similar-words-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .similar-word {
+            background: #edf2f7;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .similar-word:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .usage-container {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .usage-example {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border-left: 3px solid #48bb78;
+        }
+
+        .usage-before {
+            color: #718096;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .usage-after {
+            color: #2d3748;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .replaced-word {
+            background: #fef5e7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-decoration: line-through;
+            color: #e53e3e;
+        }
+
+        .new-word {
+            background: #e6ffed;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+            color: #48bb78;
+        }
+
+        .records-section {
+            margin-top: 40px;
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .records-header h2 {
+            color: #333;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .sync-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .sync-btn {
+            padding: 8px 16px;
+            border: 2px solid #48bb78;
+            background: white;
+            color: #48bb78;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .sync-btn:hover {
+            background: #48bb78;
+            color: white;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .daily-group {
+            margin-bottom: 24px;
+        }
+
+        .daily-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .daily-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .search-box {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            width: 250px;
+        }
+
+        .records-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .record-card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #764ba2;
+            transition: all 0.3s;
+        }
+
+        .record-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(4px);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .record-word {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .record-time {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .record-translation {
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .record-comment {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            color: #4a5568;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .delete-btn {
+            background: #fc8181;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .delete-btn:hover {
+            background: #f56565;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 English-Chinese Dictionary Tool</h1>
+            <p>Translate, record, and annotate your vocabulary learning journey</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="wordInput">English Word or Phrase</label>
+                    <div style="position: relative;">
+                        <input type="text" id="wordInput" placeholder="Enter an English word or phrase..." autocomplete="off">
+                        <div id="suggestions" class="suggestions"></div>
+                    </div>
+                </div>
+
+                <div id="translationResult" class="translation-result">
+                    <h3>📖 Translation & Details:</h3>
+                    <div id="translationText"></div>
+                    <div id="similarWords"></div>
+                    <div id="usageExamples"></div>
+                </div>
+
+                <div class="input-group">
+                    <label for="commentInput">Your Comments / Notes (Optional)</label>
+                    <textarea id="commentInput" placeholder="Add your personal notes, context, example sentences, etc..."></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-translate" onclick="translateWord()">
+                        <span id="translateBtnText">🔍 Translate</span>
+                    </button>
+                    <button class="btn-save" onclick="saveRecord()">💾 Save Record</button>
+                    <button class="btn-clear" onclick="clearForm()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="records-section">
+                <div class="records-header">
+                    <h2>📖 My Vocabulary Records</h2>
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search records..." onkeyup="searchRecords()">
+                </div>
+                <div class="view-toggle">
+                    <button class="toggle-btn active" id="dailyViewBtn" onclick="setView('daily')">📅 Daily View</button>
+                    <button class="toggle-btn" id="allViewBtn" onclick="setView('all')">📚 All Records</button>
+                </div>
+                <div class="sync-controls">
+                    <button class="sync-btn" onclick="exportRecords()">📤 Export Records</button>
+                    <button class="sync-btn" onclick="document.getElementById('importFile').click()">📥 Import Records</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importRecords(event)">
+                </div>
+                <div id="recordsList" class="records-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let records = [];
+        let currentTranslation = '';
+        let currentView = 'daily';
+
+        // Load records from localStorage on page load
+        window.onload = function() {
+            loadRecords();
+            displayRecords();
+        };
+
+        // Auto-suggest words as user types
+        let suggestTimeout;
+        document.getElementById('wordInput').addEventListener('input', function(e) {
+            clearTimeout(suggestTimeout);
+            const input = e.target.value.trim();
+            
+            if (input.length < 2) {
+                document.getElementById('suggestions').classList.remove('show');
+                return;
+            }
+
+            suggestTimeout = setTimeout(() => fetchSuggestions(input), 300);
+        });
+
+        async function fetchSuggestions(input) {
+            try {
+                const response = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(input)}*&max=8`);
+                const data = await response.json();
+                
+                const suggestionsDiv = document.getElementById('suggestions');
+                
+                if (data.length === 0) {
+                    suggestionsDiv.classList.remove('show');
+                    return;
+                }
+
+                suggestionsDiv.innerHTML = data.map(item => `
+                    <div class="suggestion-item" onclick="selectSuggestion('${escapeHtml(item.word)}')">
+                        <div class="suggestion-word">${escapeHtml(item.word)}</div>
+                    </div>
+                `).join('');
+                
+                suggestionsDiv.classList.add('show');
+            } catch (error) {
+                console.error('Suggestion error:', error);
+            }
+        }
+
+        function selectSuggestion(word) {
+            document.getElementById('wordInput').value = word;
+            document.getElementById('suggestions').classList.remove('show');
+            translateWord();
+        }
+
+        // Click outside to close suggestions
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#wordInput') && !e.target.closest('#suggestions')) {
+                document.getElementById('suggestions').classList.remove('show');
+            }
+        });
+
+        async function translateWord() {
+            const word = document.getElementById('wordInput').value.trim();
+            if (!word) {
+                alert('Please enter a word to translate');
+                return;
+            }
+
+            document.getElementById('suggestions').classList.remove('show');
+            const btn = document.getElementById('translateBtnText');
+            btn.innerHTML = '<span class="loading"></span> Translating...';
+
+            try {
+                // Fetch translation, dictionary definition, and similar words in parallel
+                const [transResponse, dictResponse, similarResponse] = await Promise.all([
+                    fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-CN`),
+                    fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`),
+                    fetch(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}&max=10`)
+                ]);
+
+                let translatedText = '';
+                let englishDef = '';
+                let examples = [];
+                let partOfSpeech = '';
+                let similarWords = [];
+
+                // Get Chinese translation
+                if (transResponse.ok) {
+                    const transData = await transResponse.json();
+                    if (transData.responseStatus === 200 && transData.responseData) {
+                        translatedText = transData.responseData.translatedText;
+                    }
+                }
+
+                // Get English definition and examples
+                if (dictResponse.ok) {
+                    const dictData = await dictResponse.json();
+                    if (dictData && dictData.length > 0) {
+                        const meanings = dictData[0].meanings;
+                        if (meanings && meanings.length > 0) {
+                            // Get first definition
+                            const firstMeaning = meanings[0];
+                            partOfSpeech = firstMeaning.partOfSpeech || '';
+                            
+                            if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
+                                englishDef = firstMeaning.definitions[0].definition;
+                                
+                                // Get example if available
+                                if (firstMeaning.definitions[0].example) {
+                                    examples.push(firstMeaning.definitions[0].example);
+                                }
+                                
+                                // Get more examples from other definitions
+                                for (let i = 1; i < Math.min(firstMeaning.definitions.length, 3); i++) {
+                                    if (firstMeaning.definitions[i].example) {
+                                        examples.push(firstMeaning.definitions[i].example);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Get similar words (synonyms)
+                if (similarResponse.ok) {
+                    const similarData = await similarResponse.json();
+                    if (similarData && similarData.length > 0) {
+                        similarWords = similarData.slice(0, 8).map(item => item.word);
+                    }
+                }
+
+                // Build detailed translation display
+                let displayHtml = '';
+                
+                if (translatedText) {
+                    displayHtml += `
+                        <div class="trans-section">
+                            <div class="trans-label">🇨🇳 Chinese Translation:</div>
+                            <div class="trans-content">${escapeHtml(translatedText)}</div>
+                        </div>
+                    `;
+                }
+
+                if (englishDef) {
+                    displayHtml += `
+                        <div class="trans-section">
+                            <div class="trans-label">📝 English Definition${partOfSpeech ? ' (' + partOfSpeech + ')' : ''}:</div>
+                            <div class="trans-content">${escapeHtml(englishDef)}</div>
+                        </div>
+                    `;
+                }
+
+                if (examples.length > 0) {
+                    displayHtml += `
+                        <div class="trans-section">
+                            <div class="trans-label">💡 Example Sentences:</div>
+                            ${examples.map(ex => `<div class="example-sentence">"${escapeHtml(ex)}"</div>`).join('')}
+                        </div>
+                    `;
+                }
+
+                if (!translatedText && !englishDef) {
+                    throw new Error('No translation found');
+                }
+
+                document.getElementById('translationText').innerHTML = displayHtml;
+
+                // Display similar words
+                displaySimilarWords(word, similarWords);
+
+                // Generate and display usage examples
+                await generateUsageExamples(word, partOfSpeech, englishDef);
+
+                // Store full translation info including similar words
+                currentTranslation = JSON.stringify({
+                    chinese: translatedText,
+                    definition: englishDef,
+                    examples: examples,
+                    similarWords: similarWords,
+                    partOfSpeech: partOfSpeech
+                });
+
+                document.getElementById('translationResult').classList.add('show');
+
+            } catch (error) {
+                alert('Translation failed. Please check the spelling and try again.');
+                console.error('Translation error:', error);
+            } finally {
+                btn.innerHTML = '🔍 Translate';
+            }
+        }
+
+        function displaySimilarWords(currentWord, similarWords) {
+            const container = document.getElementById('similarWords');
+            
+            if (similarWords.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="similar-words-container">
+                    <div class="trans-label">🔄 Similar Words (Synonyms):</div>
+                    <div class="similar-words-grid">
+                        ${similarWords.map(word => 
+                            `<span class="similar-word" onclick="searchSimilarWord('${escapeHtml(word)}')">${escapeHtml(word)}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function searchSimilarWord(word) {
+            document.getElementById('wordInput').value = word;
+            translateWord();
+        }
+
+        async function generateUsageExamples(word, partOfSpeech, definition) {
+            const container = document.getElementById('usageExamples');
+            
+            // Create example sentences showing word replacement
+            const commonWordReplacements = {
+                'happy': ['glad', 'joyful', 'cheerful', 'content', 'pleased'],
+                'sad': ['unhappy', 'sorrowful', 'gloomy', 'melancholy', 'dejected'],
+                'big': ['large', 'huge', 'enormous', 'gigantic', 'massive'],
+                'small': ['tiny', 'little', 'minute', 'petite', 'compact'],
+                'good': ['excellent', 'great', 'wonderful', 'superb', 'fine'],
+                'bad': ['terrible', 'awful', 'poor', 'inferior', 'dreadful'],
+                'beautiful': ['lovely', 'gorgeous', 'stunning', 'attractive', 'pretty'],
+                'ugly': ['unattractive', 'unsightly', 'hideous', 'grotesque', 'homely'],
+                'smart': ['intelligent', 'clever', 'bright', 'brilliant', 'wise'],
+                'stupid': ['foolish', 'dumb', 'silly', 'ignorant', 'dense'],
+                'fast': ['quick', 'rapid', 'swift', 'speedy', 'hasty'],
+                'slow': ['sluggish', 'gradual', 'leisurely', 'unhurried', 'tardy'],
+                'easy': ['simple', 'effortless', 'straightforward', 'uncomplicated', 'basic'],
+                'hard': ['difficult', 'challenging', 'tough', 'arduous', 'demanding'],
+                'important': ['significant', 'crucial', 'vital', 'essential', 'critical'],
+                'interesting': ['fascinating', 'intriguing', 'engaging', 'captivating', 'compelling'],
+                'nice': ['pleasant', 'agreeable', 'delightful', 'enjoyable', 'lovely'],
+                'old': ['ancient', 'elderly', 'aged', 'antique', 'mature'],
+                'new': ['fresh', 'novel', 'recent', 'modern', 'contemporary'],
+                'strong': ['powerful', 'robust', 'sturdy', 'mighty', 'vigorous']
+            };
+
+            // Find which common word this word can replace
+            let usageHtml = '';
+            let foundReplacement = false;
+
+            for (const [commonWord, synonyms] of Object.entries(commonWordReplacements)) {
+                if (synonyms.includes(word.toLowerCase())) {
+                    foundReplacement = true;
+                    const examples = getReplacementExamples(commonWord, word);
+                    
+                    usageHtml = `
+                        <div class="usage-container">
+                            <div class="trans-label">✨ How to Use This Word (Replacing "${commonWord}"):</div>
+                            ${examples.map(ex => `
+                                <div class="usage-example">
+                                    <div class="usage-before">❌ Common: ${ex.before}</div>
+                                    <div class="usage-after">✅ Better: ${ex.after}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    break;
+                }
+            }
+
+            // If not found in common replacements, create generic usage examples
+            if (!foundReplacement && definition) {
+                usageHtml = `
+                    <div class="usage-container">
+                        <div class="trans-label">✨ How to Use This Word:</div>
+                        <div class="usage-example">
+                            <div class="usage-after">💡 Based on the definition, you can use "<strong>${escapeHtml(word)}</strong>" in contexts related to: ${escapeHtml(definition)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = usageHtml;
+        }
+
+        function getReplacementExamples(commonWord, newWord) {
+            const templates = {
+                'happy': [
+                    {
+                        before: `She was <span class="replaced-word">happy</span> to see her friends.`,
+                        after: `She was <span class="new-word">${newWord}</span> to see her friends.`
+                    },
+                    {
+                        before: `The <span class="replaced-word">happy</span> children played in the park.`,
+                        after: `The <span class="new-word">${newWord}</span> children played in the park.`
+                    }
+                ],
+                'sad': [
+                    {
+                        before: `He felt <span class="replaced-word">sad</span> about the news.`,
+                        after: `He felt <span class="new-word">${newWord}</span> about the news.`
+                    },
+                    {
+                        before: `It was a <span class="replaced-word">sad</span> ending to the story.`,
+                        after: `It was a <span class="new-word">${newWord}</span> ending to the story.`
+                    }
+                ],
+                'big': [
+                    {
+                        before: `They live in a <span class="replaced-word">big</span> house.`,
+                        after: `They live in a <span class="new-word">${newWord}</span> house.`
+                    },
+                    {
+                        before: `The elephant was very <span class="replaced-word">big</span>.`,
+                        after: `The elephant was very <span class="new-word">${newWord}</span>.`
+                    }
+                ],
+                'small': [
+                    {
+                        before: `She has a <span class="replaced-word">small</span> apartment.`,
+                        after: `She has a <span class="new-word">${newWord}</span> apartment.`
+                    },
+                    {
+                        before: `The <span class="replaced-word">small</span> dog followed me home.`,
+                        after: `The <span class="new-word">${newWord}</span> dog followed me home.`
+                    }
+                ],
+                'good': [
+                    {
+                        before: `This is a <span class="replaced-word">good</span> book.`,
+                        after: `This is an <span class="new-word">${newWord}</span> book.`
+                    },
+                    {
+                        before: `She did a <span class="replaced-word">good</span> job on the project.`,
+                        after: `She did an <span class="new-word">${newWord}</span> job on the project.`
+                    }
+                ],
+                'bad': [
+                    {
+                        before: `The weather was <span class="replaced-word">bad</span> yesterday.`,
+                        after: `The weather was <span class="new-word">${newWord}</span> yesterday.`
+                    },
+                    {
+                        before: `That was a <span class="replaced-word">bad</span> decision.`,
+                        after: `That was a <span class="new-word">${newWord}</span> decision.`
+                    }
+                ],
+                'beautiful': [
+                    {
+                        before: `She wore a <span class="replaced-word">beautiful</span> dress.`,
+                        after: `She wore a <span class="new-word">${newWord}</span> dress.`
+                    },
+                    {
+                        before: `The sunset was <span class="replaced-word">beautiful</span>.`,
+                        after: `The sunset was <span class="new-word">${newWord}</span>.`
+                    }
+                ],
+                'smart': [
+                    {
+                        before: `He is a <span class="replaced-word">smart</span> student.`,
+                        after: `He is an <span class="new-word">${newWord}</span> student.`
+                    },
+                    {
+                        before: `That was a <span class="replaced-word">smart</span> idea.`,
+                        after: `That was an <span class="new-word">${newWord}</span> idea.`
+                    }
+                ],
+                'fast': [
+                    {
+                        before: `The car was very <span class="replaced-word">fast</span>.`,
+                        after: `The car was very <span class="new-word">${newWord}</span>.`
+                    },
+                    {
+                        before: `She gave a <span class="replaced-word">fast</span> response.`,
+                        after: `She gave a <span class="new-word">${newWord}</span> response.`
+                    }
+                ],
+                'easy': [
+                    {
+                        before: `The test was <span class="replaced-word">easy</span>.`,
+                        after: `The test was <span class="new-word">${newWord}</span>.`
+                    },
+                    {
+                        before: `This is an <span class="replaced-word">easy</span> recipe.`,
+                        after: `This is a <span class="new-word">${newWord}</span> recipe.`
+                    }
+                ],
+                'hard': [
+                    {
+                        before: `The problem was <span class="replaced-word">hard</span> to solve.`,
+                        after: `The problem was <span class="new-word">${newWord}</span> to solve.`
+                    },
+                    {
+                        before: `It was a <span class="replaced-word">hard</span> day at work.`,
+                        after: `It was a <span class="new-word">${newWord}</span> day at work.`
+                    }
+                ],
+                'important': [
+                    {
+                        before: `This is an <span class="replaced-word">important</span> meeting.`,
+                        after: `This is a <span class="new-word">${newWord}</span> meeting.`
+                    },
+                    {
+                        before: `Education is <span class="replaced-word">important</span>.`,
+                        after: `Education is <span class="new-word">${newWord}</span>.`
+                    }
+                ],
+                'interesting': [
+                    {
+                        before: `The lecture was <span class="replaced-word">interesting</span>.`,
+                        after: `The lecture was <span class="new-word">${newWord}</span>.`
+                    },
+                    {
+                        before: `She told an <span class="replaced-word">interesting</span> story.`,
+                        after: `She told a <span class="new-word">${newWord}</span> story.`
+                    }
+                ],
+                'old': [
+                    {
+                        before: `My grandfather is very <span class="replaced-word">old</span>.`,
+                        after: `My grandfather is very <span class="new-word">${newWord}</span>.`
+                    },
+                    {
+                        before: `This is an <span class="replaced-word">old</span> building.`,
+                        after: `This is an <span class="new-word">${newWord}</span> building.`
+                    }
+                ],
+                'new': [
+                    {
+                        before: `I bought a <span class="replaced-word">new</span> phone.`,
+                        after: `I bought a <span class="new-word">${newWord}</span> phone.`
+                    },
+                    {
+                        before: `They have <span class="replaced-word">new</span> ideas.`,
+                        after: `They have <span class="new-word">${newWord}</span> ideas.`
+                    }
+                ],
+                'strong': [
+                    {
+                        before: `He has <span class="replaced-word">strong</span> muscles.`,
+                        after: `He has <span class="new-word">${newWord}</span> muscles.`
+                    },
+                    {
+                        before: `The <span class="replaced-word">strong</span> wind knocked down trees.`,
+                        after: `The <span class="new-word">${newWord}</span> wind knocked down trees.`
+                    }
+                ],
+                'nice': [
+                    {
+                        before: `She is a <span class="replaced-word">nice</span> person.`,
+                        after: `She is a <span class="new-word">${newWord}</span> person.`
+                    },
+                    {
+                        before: `We had a <span class="replaced-word">nice</span> time.`,
+                        after: `We had a <span class="new-word">${newWord}</span> time.`
+                    }
+                ],
+                'slow': [
+                    {
+                        before: `The turtle was very <span class="replaced-word">slow</span>.`,
+                        after: `The turtle was very <span class="new-word">${newWord}</span>.`
+                    },
+                    {
+                        before: `Progress has been <span class="replaced-word">slow</span>.`,
+                        after: `Progress has been <span class="new-word">${newWord}</span>.`
+                    }
+                ],
+                'ugly': [
+                    {
+                        before: `The building was <span class="replaced-word">ugly</span>.`,
+                        after: `The building was <span class="new-word">${newWord}</span>.`
+                    }
+                ],
+                'stupid': [
+                    {
+                        before: `That was a <span class="replaced-word">stupid</span> mistake.`,
+                        after: `That was a <span class="new-word">${newWord}</span> mistake.`
+                    }
+                ]
+            };
+
+            return templates[commonWord] || [];
+        }
+
+        function saveRecord() {
+            const word = document.getElementById('wordInput').value.trim();
+            const comment = document.getElementById('commentInput').value.trim();
+
+            if (!word) {
+                alert('Please enter a word before saving');
+                return;
+            }
+
+            if (!currentTranslation) {
+                alert('Please translate the word first before saving');
+                return;
+            }
+
+            const now = new Date();
+            const record = {
+                id: Date.now(),
+                word: word,
+                translation: currentTranslation,
+                comment: comment,
+                date: now.toLocaleDateString('zh-CN', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                }),
+                time: now.toLocaleTimeString('zh-CN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }),
+                timestamp: now.getTime()
+            };
+
+            records.unshift(record);
+            saveRecords();
+            displayRecords();
+            clearForm();
+            
+            alert('✅ Record saved successfully!');
+        }
+
+        function clearForm() {
+            document.getElementById('wordInput').value = '';
+            document.getElementById('commentInput').value = '';
+            document.getElementById('translationResult').classList.remove('show');
+            document.getElementById('suggestions').classList.remove('show');
+            currentTranslation = '';
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('dailyViewBtn').classList.toggle('active', view === 'daily');
+            document.getElementById('allViewBtn').classList.toggle('active', view === 'all');
+            displayRecords();
+        }
+
+        function deleteRecord(id) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                records = records.filter(r => r.id !== id);
+                saveRecords();
+                displayRecords();
+            }
+        }
+
+        function displayRecords(filteredRecords = null) {
+            const recordsList = document.getElementById('recordsList');
+            const displayData = filteredRecords || records;
+
+            if (displayData.length === 0) {
+                recordsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+                        </svg>
+                        <p>No records yet. Start by translating and saving your first word!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentView === 'daily') {
+                displayDailyView(displayData);
+            } else {
+                displayAllView(displayData);
+            }
+        }
+
+        function displayDailyView(displayData) {
+            const recordsList = document.getElementById('recordsList');
+            
+            // Group records by date
+            const groupedByDate = {};
+            displayData.forEach(record => {
+                if (!groupedByDate[record.date]) {
+                    groupedByDate[record.date] = [];
+                }
+                groupedByDate[record.date].push(record);
+            });
+
+            // Sort dates descending
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                const dateA = new Date(a.split('/').reverse().join('-'));
+                const dateB = new Date(b.split('/').reverse().join('-'));
+                return dateB - dateA;
+            });
+
+            recordsList.innerHTML = sortedDates.map(date => {
+                const dayRecords = groupedByDate[date];
+                return `
+                    <div class="daily-group">
+                        <div class="daily-header">
+                            <span>${date}</span>
+                            <span class="daily-count">${dayRecords.length} word${dayRecords.length > 1 ? 's' : ''}</span>
+                        </div>
+                        ${dayRecords.map(record => renderRecordCard(record)).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayAllView(displayData) {
+            const recordsList = document.getElementById('recordsList');
+            recordsList.innerHTML = displayData.map(record => renderRecordCard(record)).join('');
+        }
+
+        function renderRecordCard(record) {
+            const transData = JSON.parse(record.translation);
+            
+            let transDisplay = '';
+            if (transData.chinese) {
+                transDisplay += `<div><strong>🇨🇳 Chinese:</strong> ${escapeHtml(transData.chinese)}</div>`;
+            }
+            if (transData.definition) {
+                transDisplay += `<div style="margin-top:8px;"><strong>📝 Definition:</strong> ${escapeHtml(transData.definition)}</div>`;
+            }
+            if (transData.examples && transData.examples.length > 0) {
+                transDisplay += `<div style="margin-top:8px;"><strong>💡 Examples:</strong></div>`;
+                transData.examples.forEach(ex => {
+                    transDisplay += `<div class="example-sentence">"${escapeHtml(ex)}"</div>`;
+                });
+            }
+            if (transData.similarWords && transData.similarWords.length > 0) {
+                transDisplay += `<div style="margin-top:8px;"><strong>🔄 Similar words:</strong> ${transData.similarWords.map(w => escapeHtml(w)).join(', ')}</div>`;
+            }
+
+            return `
+                <div class="record-card">
+                    <div class="record-header">
+                        <div>
+                            <div class="record-word">${escapeHtml(record.word)}</div>
+                            <div class="record-time">⏰ ${record.time}</div>
+                        </div>
+                    </div>
+                    <div class="record-translation">${transDisplay}</div>
+                    ${record.comment ? `<div class="record-comment">💭 ${escapeHtml(record.comment)}</div>` : ''}
+                    <button class="delete-btn" onclick="deleteRecord(${record.id})">Delete</button>
+                </div>
+            `;
+        }
+
+        function searchRecords() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            if (!searchTerm) {
+                displayRecords();
+                return;
+            }
+
+            const filtered = records.filter(record => {
+                const transData = JSON.parse(record.translation);
+                return record.word.toLowerCase().includes(searchTerm) ||
+                       (transData.chinese && transData.chinese.toLowerCase().includes(searchTerm)) ||
+                       (transData.definition && transData.definition.toLowerCase().includes(searchTerm)) ||
+                       record.comment.toLowerCase().includes(searchTerm);
+            });
+            displayRecords(filtered);
+        }
+
+        function saveRecords() {
+            localStorage.setItem('dictionaryRecords', JSON.stringify(records));
+        }
+
+        function loadRecords() {
+            const saved = localStorage.getItem('dictionaryRecords');
+            if (saved) {
+                records = JSON.parse(saved);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Export records to JSON file
+        function exportRecords() {
+            if (records.length === 0) {
+                alert('No records to export!');
+                return;
+            }
+
+            const dataStr = JSON.stringify(records, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const now = new Date();
+            const filename = `vocabulary_records_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+            link.download = filename;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ Exported ${records.length} records successfully!`);
+        }
+
+        // Import records from JSON file
+        function importRecords(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedRecords = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(importedRecords)) {
+                        throw new Error('Invalid file format');
+                    }
+
+                    // Ask user if they want to merge or replace
+                    const action = confirm(
+                        `Found ${importedRecords.length} records in the file.\n\n` +
+                        `Click OK to MERGE with existing records (${records.length}).\n` +
+                        `Click Cancel to REPLACE all existing records.`
+                    );
+
+                    if (action) {
+                        // Merge: Add imported records, avoiding duplicates by ID
+                        const existingIds = new Set(records.map(r => r.id));
+                        const newRecords = importedRecords.filter(r => !existingIds.has(r.id));
+                        records = [...records, ...newRecords];
+                        alert(`✅ Merged ${newRecords.length} new records! Total: ${records.length}`);
+                    } else {
+                        // Replace: Use imported records
+                        records = importedRecords;
+                        alert(`✅ Replaced with ${records.length} imported records!`);
+                    }
+
+                    saveRecords();
+                    displayRecords();
+                    
+                } catch (error) {
+                    alert('❌ Error importing file. Please make sure it\'s a valid vocabulary records file.');
+                    console.error('Import error:', error);
+                }
+            };
+            
+            reader.readAsText(file);
+            // Reset file input so same file can be imported again
+            event.target.value = '';
+        }
+
+        // Allow Enter key to trigger translation
+        document.getElementById('wordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                translateWord();
+            }
+        });
+    </script>
+</body>
+</html>
