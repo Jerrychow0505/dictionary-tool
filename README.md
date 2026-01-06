@@ -117,7 +117,7 @@ Download `dictionary_tool.html` and open it in any browser. Use Export/Import fo
 ![Desktop Interface](screenshots/desktop.png)
 
 ### Mobile View
-![Mobile Interface](screenshots/mobile.jpg)
+![Mobile Interface](screenshots/mobile.png)
 
 ### Daily Records View
 ![Daily View](screenshots/daily-view.png)
