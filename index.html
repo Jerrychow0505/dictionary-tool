@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English-Chinese Dictionary Tool</title>
+    <title>English-Chinese Dictionary Tool - Cloud Sync</title>
     <style>
         * {
             margin: 0;
@@ -42,6 +42,93 @@
         .header p {
             opacity: 0.9;
             font-size: 14px;
+        }
+
+        .sync-status {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 12px;
+            font-size: 13px;
+            display: inline-block;
+        }
+
+        .sync-status.synced {
+            background: rgba(72, 187, 120, 0.3);
+        }
+
+        .sync-status.syncing {
+            background: rgba(237, 137, 54, 0.3);
+        }
+
+        .login-section {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-section h2 {
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+
+        .login-section p {
+            color: #718096;
+            margin-bottom: 24px;
+        }
+
+        .user-id-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .login-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            background: #f7fafc;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info span {
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: #fc8181;
+            color: white;
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #f56565;
         }
 
         .main-content {
@@ -121,12 +208,6 @@
         .suggestion-word {
             font-weight: 600;
             color: #667eea;
-        }
-
-        .suggestion-def {
-            font-size: 13px;
-            color: #718096;
-            margin-top: 2px;
         }
 
         .button-group {
@@ -489,6 +570,10 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -496,72 +581,219 @@
         <div class="header">
             <h1>📚 English-Chinese Dictionary Tool</h1>
             <p>Translate, record, and annotate your vocabulary learning journey</p>
+            <div class="sync-status" id="syncStatus">🔄 Cloud Sync Ready</div>
         </div>
 
-        <div class="main-content">
-            <div class="input-section">
-                <div class="input-group">
-                    <label for="wordInput">English Word or Phrase</label>
-                    <div style="position: relative;">
-                        <input type="text" id="wordInput" placeholder="Enter an English word or phrase..." autocomplete="off">
-                        <div id="suggestions" class="suggestions"></div>
+        <!-- Login Section -->
+        <div id="loginSection" class="login-section">
+            <h2>🔐 Sign In to Enable Cloud Sync</h2>
+            <p>Create a unique User ID to sync your vocabulary across all devices</p>
+            <input type="text" id="userIdInput" class="user-id-input" placeholder="Enter your User ID (e.g., john_smith_vocab)">
+            <br>
+            <button class="login-btn" onclick="login()">Start Using Cloud Sync</button>
+            <p style="margin-top: 20px; font-size: 12px; color: #a0aec0;">
+                💡 Tip: Use the same User ID on all your devices to keep everything in sync!<br>
+                Your User ID can be anything - just remember it!
+            </p>
+        </div>
+
+        <!-- User Info Bar (shown when logged in) -->
+        <div id="userInfoBar" class="user-info hidden">
+            <span>👤 Logged in as: <strong id="displayUserId"></strong></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Main App (shown when logged in) -->
+        <div id="mainApp" class="hidden">
+            <div class="main-content">
+                <div class="input-section">
+                    <div class="input-group">
+                        <label for="wordInput">English Word or Phrase</label>
+                        <div style="position: relative;">
+                            <input type="text" id="wordInput" placeholder="Enter an English word or phrase..." autocomplete="off">
+                            <div id="suggestions" class="suggestions"></div>
+                        </div>
+                    </div>
+
+                    <div id="translationResult" class="translation-result">
+                        <h3>📖 Translation & Details:</h3>
+                        <div id="translationText"></div>
+                        <div id="similarWords"></div>
+                        <div id="usageExamples"></div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="commentInput">Your Comments / Notes (Optional)</label>
+                        <textarea id="commentInput" placeholder="Add your personal notes, context, example sentences, etc..."></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-translate" onclick="translateWord()">
+                            <span id="translateBtnText">🔍 Translate</span>
+                        </button>
+                        <button class="btn-save" onclick="saveRecord()">💾 Save Record</button>
+                        <button class="btn-clear" onclick="clearForm()">🗑️ Clear</button>
                     </div>
                 </div>
 
-                <div id="translationResult" class="translation-result">
-                    <h3>📖 Translation & Details:</h3>
-                    <div id="translationText"></div>
-                    <div id="similarWords"></div>
-                    <div id="usageExamples"></div>
+                <div class="records-section">
+                    <div class="records-header">
+                        <h2>📖 My Vocabulary Records</h2>
+                        <input type="text" class="search-box" id="searchBox" placeholder="Search records..." onkeyup="searchRecords()">
+                    </div>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" id="dailyViewBtn" onclick="setView('daily')">📅 Daily View</button>
+                        <button class="toggle-btn" id="allViewBtn" onclick="setView('all')">📚 All Records</button>
+                    </div>
+                    <div class="sync-controls">
+                        <button class="sync-btn" onclick="exportRecords()">📤 Export Backup</button>
+                        <button class="sync-btn" onclick="document.getElementById('importFile').click()">📥 Import Backup</button>
+                        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importRecords(event)">
+                    </div>
+                    <div id="recordsList" class="records-list"></div>
                 </div>
-
-                <div class="input-group">
-                    <label for="commentInput">Your Comments / Notes (Optional)</label>
-                    <textarea id="commentInput" placeholder="Add your personal notes, context, example sentences, etc..."></textarea>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-translate" onclick="translateWord()">
-                        <span id="translateBtnText">🔍 Translate</span>
-                    </button>
-                    <button class="btn-save" onclick="saveRecord()">💾 Save Record</button>
-                    <button class="btn-clear" onclick="clearForm()">🗑️ Clear</button>
-                </div>
-            </div>
-
-            <div class="records-section">
-                <div class="records-header">
-                    <h2>📖 My Vocabulary Records</h2>
-                    <input type="text" class="search-box" id="searchBox" placeholder="Search records..." onkeyup="searchRecords()">
-                </div>
-                <div class="view-toggle">
-                    <button class="toggle-btn active" id="dailyViewBtn" onclick="setView('daily')">📅 Daily View</button>
-                    <button class="toggle-btn" id="allViewBtn" onclick="setView('all')">📚 All Records</button>
-                </div>
-                <div class="sync-controls">
-                    <button class="sync-btn" onclick="exportRecords()">📤 Export Records</button>
-                    <button class="sync-btn" onclick="document.getElementById('importFile').click()">📥 Import Records</button>
-                    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importRecords(event)">
-                </div>
-                <div id="recordsList" class="records-list"></div>
             </div>
         </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, onValue, push, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration - You'll need to replace this with your own
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJGQAwgsFqQQaXJVM1UjhZZrSgMfjXMOc",
+            authDomain: "dictionary-tool-3c739.firebaseapp.com",
+            databaseURL: "https://dictionary-tool-3c739-default-rtdb.firebaseio.com",
+            projectId: "dictionary-tool-3c739",
+            storageBucket: "dictionary-tool-3c739.firebasestorage.app",
+            messagingSenderId: "505333396292",
+            appId: "1:505333396292:web:dcf58fbc739da835e49d11"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseOnValue = onValue;
+        window.firebasePush = push;
+        window.firebaseRemove = remove;
+        window.firebaseInitialized = true;
+    </script>
 
     <script>
         let records = [];
         let currentTranslation = '';
         let currentView = 'daily';
+        let currentUserId = null;
+        let recordsListener = null;
 
-        // Load records from localStorage on page load
+        // Check if user is already logged in
         window.onload = function() {
-            loadRecords();
-            displayRecords();
+            const savedUserId = localStorage.getItem('dictionaryUserId');
+            if (savedUserId) {
+                currentUserId = savedUserId;
+                showMainApp();
+                initializeCloudSync();
+            }
         };
+
+        function login() {
+            const userId = document.getElementById('userIdInput').value.trim();
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+
+            // Validate userId (alphanumeric and underscores only)
+            if (!/^[a-zA-Z0-9_]+$/.test(userId)) {
+                alert('User ID can only contain letters, numbers, and underscores');
+                return;
+            }
+
+            currentUserId = userId;
+            localStorage.setItem('dictionaryUserId', userId);
+            showMainApp();
+            initializeCloudSync();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout? Your records are safely stored in the cloud.')) {
+                // Detach listener
+                if (recordsListener) {
+                    recordsListener();
+                }
+                
+                currentUserId = null;
+                records = [];
+                localStorage.removeItem('dictionaryUserId');
+                
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('userInfoBar').classList.add('hidden');
+                document.getElementById('userIdInput').value = '';
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userInfoBar').classList.remove('hidden');
+            document.getElementById('displayUserId').textContent = currentUserId;
+        }
+
+        function initializeCloudSync() {
+            updateSyncStatus('syncing');
+
+            // Wait for Firebase to initialize
+            const checkFirebase = setInterval(() => {
+                if (window.firebaseInitialized) {
+                    clearInterval(checkFirebase);
+                    setupRealtimeSync();
+                }
+            }, 100);
+        }
+
+        function setupRealtimeSync() {
+            const recordsRef = window.firebaseRef(window.firebaseDB, `users/${currentUserId}/records`);
+            
+            // Listen for changes
+            recordsListener = window.firebaseOnValue(recordsRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    records = Object.entries(data).map(([key, value]) => ({
+                        firebaseKey: key,
+                        ...value
+                    }));
+                    // Sort by timestamp descending
+                    records.sort((a, b) => b.timestamp - a.timestamp);
+                } else {
+                    records = [];
+                }
+                displayRecords();
+                updateSyncStatus('synced');
+            });
+        }
+
+        function updateSyncStatus(status) {
+            const statusEl = document.getElementById('syncStatus');
+            if (status === 'synced') {
+                statusEl.textContent = '✅ Synced';
+                statusEl.className = 'sync-status synced';
+            } else if (status === 'syncing') {
+                statusEl.textContent = '🔄 Syncing...';
+                statusEl.className = 'sync-status syncing';
+            }
+        }
 
         // Auto-suggest words as user types
         let suggestTimeout;
-        document.getElementById('wordInput').addEventListener('input', function(e) {
+        document.getElementById('wordInput')?.addEventListener('input', function(e) {
             clearTimeout(suggestTimeout);
             const input = e.target.value.trim();
             
@@ -606,7 +838,7 @@
         // Click outside to close suggestions
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#wordInput') && !e.target.closest('#suggestions')) {
-                document.getElementById('suggestions').classList.remove('show');
+                document.getElementById('suggestions')?.classList.remove('show');
             }
         });
 
@@ -649,19 +881,16 @@
                     if (dictData && dictData.length > 0) {
                         const meanings = dictData[0].meanings;
                         if (meanings && meanings.length > 0) {
-                            // Get first definition
                             const firstMeaning = meanings[0];
                             partOfSpeech = firstMeaning.partOfSpeech || '';
                             
                             if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
                                 englishDef = firstMeaning.definitions[0].definition;
                                 
-                                // Get example if available
                                 if (firstMeaning.definitions[0].example) {
                                     examples.push(firstMeaning.definitions[0].example);
                                 }
                                 
-                                // Get more examples from other definitions
                                 for (let i = 1; i < Math.min(firstMeaning.definitions.length, 3); i++) {
                                     if (firstMeaning.definitions[i].example) {
                                         examples.push(firstMeaning.definitions[i].example);
@@ -672,7 +901,7 @@
                     }
                 }
 
-                // Get similar words (synonyms)
+                // Get similar words
                 if (similarResponse.ok) {
                     const similarData = await similarResponse.json();
                     if (similarData && similarData.length > 0) {
@@ -680,7 +909,7 @@
                     }
                 }
 
-                // Build detailed translation display
+                // Build display
                 let displayHtml = '';
                 
                 if (translatedText) {
@@ -715,14 +944,9 @@
                 }
 
                 document.getElementById('translationText').innerHTML = displayHtml;
-
-                // Display similar words
                 displaySimilarWords(word, similarWords);
-
-                // Generate and display usage examples
                 await generateUsageExamples(word, partOfSpeech, englishDef);
 
-                // Store full translation info including similar words
                 currentTranslation = JSON.stringify({
                     chinese: translatedText,
                     definition: englishDef,
@@ -771,7 +995,6 @@
         async function generateUsageExamples(word, partOfSpeech, definition) {
             const container = document.getElementById('usageExamples');
             
-            // Create example sentences showing word replacement
             const commonWordReplacements = {
                 'happy': ['glad', 'joyful', 'cheerful', 'content', 'pleased'],
                 'sad': ['unhappy', 'sorrowful', 'gloomy', 'melancholy', 'dejected'],
@@ -795,7 +1018,6 @@
                 'strong': ['powerful', 'robust', 'sturdy', 'mighty', 'vigorous']
             };
 
-            // Find which common word this word can replace
             let usageHtml = '';
             let foundReplacement = false;
 
@@ -819,7 +1041,6 @@
                 }
             }
 
-            // If not found in common replacements, create generic usage examples
             if (!foundReplacement && definition) {
                 usageHtml = `
                     <div class="usage-container">
@@ -850,170 +1071,102 @@
                     {
                         before: `He felt <span class="replaced-word">sad</span> about the news.`,
                         after: `He felt <span class="new-word">${newWord}</span> about the news.`
-                    },
-                    {
-                        before: `It was a <span class="replaced-word">sad</span> ending to the story.`,
-                        after: `It was a <span class="new-word">${newWord}</span> ending to the story.`
                     }
                 ],
                 'big': [
                     {
                         before: `They live in a <span class="replaced-word">big</span> house.`,
                         after: `They live in a <span class="new-word">${newWord}</span> house.`
-                    },
-                    {
-                        before: `The elephant was very <span class="replaced-word">big</span>.`,
-                        after: `The elephant was very <span class="new-word">${newWord}</span>.`
                     }
                 ],
                 'small': [
                     {
                         before: `She has a <span class="replaced-word">small</span> apartment.`,
                         after: `She has a <span class="new-word">${newWord}</span> apartment.`
-                    },
-                    {
-                        before: `The <span class="replaced-word">small</span> dog followed me home.`,
-                        after: `The <span class="new-word">${newWord}</span> dog followed me home.`
                     }
                 ],
                 'good': [
                     {
                         before: `This is a <span class="replaced-word">good</span> book.`,
                         after: `This is an <span class="new-word">${newWord}</span> book.`
-                    },
-                    {
-                        before: `She did a <span class="replaced-word">good</span> job on the project.`,
-                        after: `She did an <span class="new-word">${newWord}</span> job on the project.`
                     }
                 ],
                 'bad': [
                     {
                         before: `The weather was <span class="replaced-word">bad</span> yesterday.`,
                         after: `The weather was <span class="new-word">${newWord}</span> yesterday.`
-                    },
-                    {
-                        before: `That was a <span class="replaced-word">bad</span> decision.`,
-                        after: `That was a <span class="new-word">${newWord}</span> decision.`
                     }
                 ],
                 'beautiful': [
                     {
                         before: `She wore a <span class="replaced-word">beautiful</span> dress.`,
                         after: `She wore a <span class="new-word">${newWord}</span> dress.`
-                    },
-                    {
-                        before: `The sunset was <span class="replaced-word">beautiful</span>.`,
-                        after: `The sunset was <span class="new-word">${newWord}</span>.`
                     }
                 ],
                 'smart': [
                     {
                         before: `He is a <span class="replaced-word">smart</span> student.`,
                         after: `He is an <span class="new-word">${newWord}</span> student.`
-                    },
-                    {
-                        before: `That was a <span class="replaced-word">smart</span> idea.`,
-                        after: `That was an <span class="new-word">${newWord}</span> idea.`
                     }
                 ],
                 'fast': [
                     {
                         before: `The car was very <span class="replaced-word">fast</span>.`,
                         after: `The car was very <span class="new-word">${newWord}</span>.`
-                    },
-                    {
-                        before: `She gave a <span class="replaced-word">fast</span> response.`,
-                        after: `She gave a <span class="new-word">${newWord}</span> response.`
                     }
                 ],
                 'easy': [
                     {
                         before: `The test was <span class="replaced-word">easy</span>.`,
                         after: `The test was <span class="new-word">${newWord}</span>.`
-                    },
-                    {
-                        before: `This is an <span class="replaced-word">easy</span> recipe.`,
-                        after: `This is a <span class="new-word">${newWord}</span> recipe.`
                     }
                 ],
                 'hard': [
                     {
                         before: `The problem was <span class="replaced-word">hard</span> to solve.`,
                         after: `The problem was <span class="new-word">${newWord}</span> to solve.`
-                    },
-                    {
-                        before: `It was a <span class="replaced-word">hard</span> day at work.`,
-                        after: `It was a <span class="new-word">${newWord}</span> day at work.`
                     }
                 ],
                 'important': [
                     {
                         before: `This is an <span class="replaced-word">important</span> meeting.`,
                         after: `This is a <span class="new-word">${newWord}</span> meeting.`
-                    },
-                    {
-                        before: `Education is <span class="replaced-word">important</span>.`,
-                        after: `Education is <span class="new-word">${newWord}</span>.`
                     }
                 ],
                 'interesting': [
                     {
                         before: `The lecture was <span class="replaced-word">interesting</span>.`,
                         after: `The lecture was <span class="new-word">${newWord}</span>.`
-                    },
-                    {
-                        before: `She told an <span class="replaced-word">interesting</span> story.`,
-                        after: `She told a <span class="new-word">${newWord}</span> story.`
                     }
                 ],
                 'old': [
                     {
                         before: `My grandfather is very <span class="replaced-word">old</span>.`,
                         after: `My grandfather is very <span class="new-word">${newWord}</span>.`
-                    },
-                    {
-                        before: `This is an <span class="replaced-word">old</span> building.`,
-                        after: `This is an <span class="new-word">${newWord}</span> building.`
                     }
                 ],
                 'new': [
                     {
                         before: `I bought a <span class="replaced-word">new</span> phone.`,
                         after: `I bought a <span class="new-word">${newWord}</span> phone.`
-                    },
-                    {
-                        before: `They have <span class="replaced-word">new</span> ideas.`,
-                        after: `They have <span class="new-word">${newWord}</span> ideas.`
                     }
                 ],
                 'strong': [
                     {
                         before: `He has <span class="replaced-word">strong</span> muscles.`,
                         after: `He has <span class="new-word">${newWord}</span> muscles.`
-                    },
-                    {
-                        before: `The <span class="replaced-word">strong</span> wind knocked down trees.`,
-                        after: `The <span class="new-word">${newWord}</span> wind knocked down trees.`
                     }
                 ],
                 'nice': [
                     {
                         before: `She is a <span class="replaced-word">nice</span> person.`,
                         after: `She is a <span class="new-word">${newWord}</span> person.`
-                    },
-                    {
-                        before: `We had a <span class="replaced-word">nice</span> time.`,
-                        after: `We had a <span class="new-word">${newWord}</span> time.`
                     }
                 ],
                 'slow': [
                     {
                         before: `The turtle was very <span class="replaced-word">slow</span>.`,
                         after: `The turtle was very <span class="new-word">${newWord}</span>.`
-                    },
-                    {
-                        before: `Progress has been <span class="replaced-word">slow</span>.`,
-                        after: `Progress has been <span class="new-word">${newWord}</span>.`
                     }
                 ],
                 'ugly': [
@@ -1034,6 +1187,11 @@
         }
 
         function saveRecord() {
+            if (!currentUserId) {
+                alert('Please login first');
+                return;
+            }
+
             const word = document.getElementById('wordInput').value.trim();
             const comment = document.getElementById('commentInput').value.trim();
 
@@ -1047,9 +1205,10 @@
                 return;
             }
 
+            updateSyncStatus('syncing');
+
             const now = new Date();
             const record = {
-                id: Date.now(),
                 word: word,
                 translation: currentTranslation,
                 comment: comment,
@@ -1065,12 +1224,16 @@
                 timestamp: now.getTime()
             };
 
-            records.unshift(record);
-            saveRecords();
-            displayRecords();
-            clearForm();
-            
-            alert('✅ Record saved successfully!');
+            // Save to Firebase
+            const recordsRef = window.firebaseRef(window.firebaseDB, `users/${currentUserId}/records`);
+            const newRecordRef = window.firebasePush(recordsRef);
+            window.firebaseSet(newRecordRef, record).then(() => {
+                clearForm();
+                alert('✅ Record saved and synced to cloud!');
+            }).catch((error) => {
+                alert('Error saving record: ' + error.message);
+                console.error('Save error:', error);
+            });
         }
 
         function clearForm() {
@@ -1088,11 +1251,16 @@
             displayRecords();
         }
 
-        function deleteRecord(id) {
+        function deleteRecord(firebaseKey) {
+            if (!currentUserId) return;
+
             if (confirm('Are you sure you want to delete this record?')) {
-                records = records.filter(r => r.id !== id);
-                saveRecords();
-                displayRecords();
+                updateSyncStatus('syncing');
+                const recordRef = window.firebaseRef(window.firebaseDB, `users/${currentUserId}/records/${firebaseKey}`);
+                window.firebaseRemove(recordRef).catch((error) => {
+                    alert('Error deleting record: ' + error.message);
+                    console.error('Delete error:', error);
+                });
             }
         }
 
@@ -1122,7 +1290,6 @@
         function displayDailyView(displayData) {
             const recordsList = document.getElementById('recordsList');
             
-            // Group records by date
             const groupedByDate = {};
             displayData.forEach(record => {
                 if (!groupedByDate[record.date]) {
@@ -1131,7 +1298,6 @@
                 groupedByDate[record.date].push(record);
             });
 
-            // Sort dates descending
             const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
                 const dateA = new Date(a.split('/').reverse().join('-'));
                 const dateB = new Date(b.split('/').reverse().join('-'));
@@ -1187,7 +1353,7 @@
                     </div>
                     <div class="record-translation">${transDisplay}</div>
                     ${record.comment ? `<div class="record-comment">💭 ${escapeHtml(record.comment)}</div>` : ''}
-                    <button class="delete-btn" onclick="deleteRecord(${record.id})">Delete</button>
+                    <button class="delete-btn" onclick="deleteRecord('${record.firebaseKey}')">Delete</button>
                 </div>
             `;
         }
@@ -1209,24 +1375,6 @@
             displayRecords(filtered);
         }
 
-        function saveRecords() {
-            localStorage.setItem('dictionaryRecords', JSON.stringify(records));
-        }
-
-        function loadRecords() {
-            const saved = localStorage.getItem('dictionaryRecords');
-            if (saved) {
-                records = JSON.parse(saved);
-            }
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Export records to JSON file
         function exportRecords() {
             if (records.length === 0) {
                 alert('No records to export!');
@@ -1241,7 +1389,7 @@
             link.href = url;
             
             const now = new Date();
-            const filename = `vocabulary_records_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+            const filename = `vocabulary_backup_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
             link.download = filename;
             
             document.body.appendChild(link);
@@ -1249,10 +1397,9 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             
-            alert(`✅ Exported ${records.length} records successfully!`);
+            alert(`✅ Exported ${records.length} records as backup!`);
         }
 
-        // Import records from JSON file
         function importRecords(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1266,41 +1413,50 @@
                         throw new Error('Invalid file format');
                     }
 
-                    // Ask user if they want to merge or replace
-                    const action = confirm(
-                        `Found ${importedRecords.length} records in the file.\n\n` +
-                        `Click OK to MERGE with existing records (${records.length}).\n` +
-                        `Click Cancel to REPLACE all existing records.`
-                    );
-
-                    if (action) {
-                        // Merge: Add imported records, avoiding duplicates by ID
-                        const existingIds = new Set(records.map(r => r.id));
-                        const newRecords = importedRecords.filter(r => !existingIds.has(r.id));
-                        records = [...records, ...newRecords];
-                        alert(`✅ Merged ${newRecords.length} new records! Total: ${records.length}`);
-                    } else {
-                        // Replace: Use imported records
-                        records = importedRecords;
-                        alert(`✅ Replaced with ${records.length} imported records!`);
+                    if (!confirm(`Import ${importedRecords.length} records? This will merge with your existing cloud data.`)) {
+                        return;
                     }
 
-                    saveRecords();
-                    displayRecords();
+                    updateSyncStatus('syncing');
+
+                    // Import to Firebase
+                    const recordsRef = window.firebaseRef(window.firebaseDB, `users/${currentUserId}/records`);
+                    
+                    let imported = 0;
+                    importedRecords.forEach(record => {
+                        const newRecordRef = window.firebasePush(recordsRef);
+                        const cleanRecord = {
+                            word: record.word,
+                            translation: record.translation,
+                            comment: record.comment,
+                            date: record.date,
+                            time: record.time,
+                            timestamp: record.timestamp
+                        };
+                        window.firebaseSet(newRecordRef, cleanRecord);
+                        imported++;
+                    });
+
+                    alert(`✅ Imported ${imported} records to cloud!`);
                     
                 } catch (error) {
-                    alert('❌ Error importing file. Please make sure it\'s a valid vocabulary records file.');
+                    alert('❌ Error importing file. Please make sure it\'s a valid backup file.');
                     console.error('Import error:', error);
                 }
             };
             
             reader.readAsText(file);
-            // Reset file input so same file can be imported again
             event.target.value = '';
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Allow Enter key to trigger translation
-        document.getElementById('wordInput').addEventListener('keypress', function(e) {
+        document.getElementById('wordInput')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 translateWord();
             }
